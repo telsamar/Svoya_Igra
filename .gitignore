@@ -4,3 +4,4 @@ venvIgra
 .gitattributes
 __pycache__
 test.py
+text.txt
