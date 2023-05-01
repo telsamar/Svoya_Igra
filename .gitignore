@@ -3,3 +3,4 @@ venvIgra
 /*.DS_Store
 .gitattributes
 __pycache__
+test.py
