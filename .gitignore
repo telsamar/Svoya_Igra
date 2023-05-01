@@ -1,0 +1,5 @@
+venvIgra
+.DS_Store
+/*.DS_Store
+.gitattributes
+__pycache__
