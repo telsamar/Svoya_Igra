@@ -5,11 +5,13 @@ import random
 pygame.init()
 
 # Определение размеров и цветов экрана
-screen_width = 800
+screen_width = 1200
 screen_height = 800
 white = (255, 255, 255)
 blue = (0, 0, 255)
 grey = (200, 200, 200)
+green =  (0, 255, 0)
+black = (0, 0, 0)
 
 # Создание окна
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -19,35 +21,39 @@ pygame.display.set_caption("Своя игра")
 font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
 
-# Определение категорий и вопросов
-questions = {
-    "Математика": [
-        {"question": "Сколько будет 2+2?", "answer": "4"},
-        {"question": "Какой корень из 9?", "answer": "3"},
-        {"question": "Сколько градусов в прямом угле?", "answer": "90"}
-    ],
-    "География": [
-        {"question": "Столица Франции?", "answer": "Париж"},
-        {"question": "На каком континенте находится Африка?", "answer": "Африка"},
-        {"question": "Какой самый большой океан?", "answer": "Тихий"}
-    ],
-    "История": [
-        {"question": "В каком году открылся первый макдоналдс в СССР?", "answer": "1990"},
-        {"question": "Кто изобрел телефон?", "answer": "Александр Грэм Белл"},
-        {"question": "Когда произошла Битва при Бородине?", "answer": "1812"}
-    ]
-}
+def read_questions_from_file(filename):
+    questions = {}
+    with open(filename, "r", encoding="utf-8") as file:
+        for line in file:
+            category, question, answer = line.strip().split(",")
+            if category not in questions:
+                questions[category] = []
+            questions[category].append({"question": question, "answer": answer})
+    return questions
+
+questions = read_questions_from_file("questions.txt")
 
 def draw_player_circle(player, x, y, active, score):
     pygame.draw.circle(screen, blue if active else grey, (x, y), 50)
-    draw_text(f"Человек {player}", x - 30, y - 10, font_small, white if active else blue)
-    draw_text(f"{score}", x - 10, y - 70, font_small, blue)
+
+    # Центрирование текста "Человек {player}" внутри круга
+    player_text = f"Человек {player}"
+    player_text_surface = font_small.render(player_text, True, white if active else blue)
+    player_text_rect = player_text_surface.get_rect(center=(x, y))
+    screen.blit(player_text_surface, player_text_rect)
+
+    # Выравнивание счета над кругом по центру по ширине
+    score_text = f"{score}"
+    score_text_surface = font_small.render(score_text, True, white)
+    score_text_rect = score_text_surface.get_rect(center=(x, y - 70))
+    screen.blit(score_text_surface, score_text_rect)
+
 
 question_states = {}
 for category in questions:
     question_states[category] = [None] * len(questions[category])
 
-def draw_text(text, x, y, font_obj, color=blue):
+def draw_text(text, x, y, font_obj, color=white):
     text_surface = font_obj.render(text, True, color)
     screen.blit(text_surface, (x, y))
 
@@ -61,11 +67,32 @@ def draw_circle(text, x, y, radius, color):
     text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)
 
+def wrap_text(text, font_obj, max_width):
+    words = text.split(' ')
+    lines = []
+    current_line = words[0]
+
+    for word in words[1:]:
+        new_line = current_line + ' ' + word
+        new_line_width, _ = font_obj.size(new_line)
+
+        if new_line_width <= max_width:
+            current_line = new_line
+        else:
+            lines.append(current_line)
+            current_line = word
+
+    lines.append(current_line)
+    return lines
+
+
 def ask_question(category, question_index, active_player):
     q = questions[category][question_index]
     correct = False
 
-    draw_text(f"Вопрос из категории '{category}': {q['question']}", 50, 50, font)
+    wrapped_question = wrap_text(f"Вопрос из категории '{category}': {q['question']}", font, screen_width - 50)
+    line_spacing = 36
+    answer_y = 50 + len(wrapped_question) * line_spacing
 
     user_answer = ""
     while not correct:
@@ -76,15 +103,16 @@ def ask_question(category, question_index, active_player):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     if user_answer.lower() == q["answer"].lower():
-                        draw_text(f"Правильно. Молодец!!!", 50, 150, font)
+                        draw_text(f"Правильно. Молодец!!!", 50, answer_y + line_spacing, font)
                         question_states[category][question_index] = True
                         player_scores[active_player - 1] += (question_index + 1) * 100
                         pygame.display.flip()
                         pygame.time.delay(2000)
                         return
                     else:
-                        draw_text(f"Неправильно. Правильный ответ: {q['answer']}", 50, 150, font)
+                        draw_text(f"Неправильно. Правильный ответ: {q['answer']}", 50, answer_y + line_spacing, font)
                         question_states[category][question_index] = False
+                        player_scores[active_player - 1] -= (question_index + 1) * 100  # Уменьшаем счет игрока
                         pygame.display.flip()
                         pygame.time.delay(2000)
                         return
@@ -92,11 +120,16 @@ def ask_question(category, question_index, active_player):
                     user_answer = user_answer[:-1]
                 else:
                     user_answer += event.unicode
-
-        screen.fill(white)
-        draw_text(f"Вопрос из категории '{category}': {q['question']}", 50, 50, font)
-        draw_text("Ваш ответ: " + user_answer, 50, 100, font)
+        
+        background_image_q = pygame.image.load("fon.jpg")
+        background_image_q = pygame.transform.scale(background_image_q, (1200, 800))
+        screen.blit(background_image_q, (0, 0))
+        # screen.fill(black)
+        for i, line in enumerate(wrapped_question):
+            draw_text(line, 50, 50 + i * 36, font)
+        draw_text("Ваш ответ: " + user_answer, 50, answer_y, font)
         pygame.display.flip()
+
 
 
 def main():
@@ -105,9 +138,11 @@ def main():
     active_players = [False, False]  # Состояние кружков с человечками
     global player_scores
     player_scores = [0, 0]
+    background_image = pygame.image.load("fon.jpg")
+    background_image = pygame.transform.scale(background_image, (1200, 800))
 
     while running:
-        screen.fill(white)
+        screen.blit(background_image, (0, 0))
 
         # Рисуем кнопки для категорий и вопросов
         button_width = 150
@@ -155,6 +190,9 @@ def main():
                                 if question_states[category][j] is None:  # Только если вопрос еще не был отвечен
                                     screen.fill(white)
                                     ask_question(category, j, active_player)
+                                    active_player = None  # Сбрасываем значение активного игрока
+                                    active_players = [False, False]  # Сбрасываем состояние активности игроков
+                                    
                                     # Обновляем состояние кнопки в зависимости от ответа
                                     if question_states[category][j]:
                                         button_color = (0, 255, 0)  # Зеленый
