@@ -33,7 +33,7 @@ def read_questions_from_file(filename):
 
 questions = read_questions_from_file("questions.txt")
 
-def draw_player_circle(player, x, y, active, score):
+def draw_player_circle(player, index, x, y, active, score):
     pygame.draw.circle(screen, blue if active else grey, (x, y), 50)
 
     # Центрирование текста "Человек {player}" внутри круга
@@ -130,14 +130,68 @@ def ask_question(category, question_index, active_player):
         draw_text("Ваш ответ: " + user_answer, 50, answer_y, font)
         pygame.display.flip()
 
+def get_num_players():
+    running = True
+    num_players = 2  # Значение по умолчанию
+    center_x = screen_width // 2
+    center_y = screen_height // 2
+    selected_player = None
+    start_button_rect = pygame.Rect(center_x - 50, center_y + 150, 100, 40)
+
+    def update_display():
+        screen.fill(black)
+        text_surface = font.render("Выберите количество игроков (2-5):", True, white)
+        text_rect = text_surface.get_rect(center=(center_x, center_y - 100))
+        screen.blit(text_surface, text_rect)
+
+        for i in range(2, 6):
+            circle_x = center_x + (i - 3.5) * 100
+            circle_y = center_y
+            color = grey if i != selected_player else blue
+            draw_circle(str(i), int(circle_x), int(circle_y), 50, color)
+
+        if selected_player is not None:
+            pygame.draw.rect(screen, blue, start_button_rect)
+            start_text_surface = font_small.render("Старт", True, white)
+            start_text_rect = start_text_surface.get_rect(center=start_button_rect.center)
+            screen.blit(start_text_surface, start_text_rect)
+
+        pygame.display.flip()
+
+    update_display()
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+
+                for i in range(2, 6):
+                    circle_x = center_x + (i - 3.5) * 100
+                    circle_y = center_y
+                    if ((mouse_x - circle_x) ** 2 + (mouse_y - circle_y) ** 2) <= 50 ** 2:
+                        selected_player = i
+                        update_display()
+
+                if selected_player is not None and start_button_rect.collidepoint(mouse_x, mouse_y):
+                    num_players = selected_player
+                    running = False
+
+    return num_players
+
+
 
 
 def main():
+    num_players = get_num_players()
     running = True
     active_player = None  # 1 или 2
-    active_players = [False, False]  # Состояние кружков с человечками
+    active_players = [False] * num_players
     global player_scores
-    player_scores = [0, 0]
+    player_scores = [0] * num_players
     background_image = pygame.image.load("fon.jpg")
     background_image = pygame.transform.scale(background_image, (1200, 800))
 
@@ -161,8 +215,11 @@ def main():
                     button_color = (255, 0, 0)  # Красный
                 draw_button(str((j + 1) * 100), start_x + i * (button_width + button_margin), 100 + j * (button_height + button_margin), button_width, button_height, button_color)
 
-        draw_player_circle(1, screen_width // 2 - 100, screen_height - 100, active_player == 1, player_scores[0])
-        draw_player_circle(2, screen_width // 2 + 100, screen_height - 100, active_player == 2, player_scores[1])
+        # draw_player_circle(1, screen_width // 2 - 100, screen_height - 100, active_player == 1, player_scores[0])
+        # draw_player_circle(2, screen_width // 2 + 100, screen_height - 100, active_player == 2, player_scores[1])
+        for i in range(num_players):
+            draw_player_circle(i + 1, i, screen_width // (num_players + 1) * (i + 1), screen_height - 100, active_player == i + 1, player_scores[i])
+
 
         pygame.display.flip()
 
@@ -173,12 +230,15 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
                 # Проверяем клик по кружкам с человечками
-                for i in range(2):
-                    circle_x = screen_width // 2 + (-100 if i == 0 else 100)
+                for i in range(num_players):
+                    circle_x = screen_width // (num_players + 1) * (i + 1)
                     circle_y = screen_height - 100
                     if ((mouse_x - circle_x) ** 2 + (mouse_y - circle_y) ** 2) <= 50 ** 2:
                         active_player = i + 1
-                        active_players = [not active_players[i] if j == i else False for j in range(2)]
+                        # active_players = [not active_players[i] if j == i else False for j in range(num_players)]
+                        active_players = []
+                        for i in range(num_players):
+                            active_players.append(False)
 
                 # Если выбран активный игрок, проверяем клик по квадратикам с вопросами
                 if active_player is not None:
