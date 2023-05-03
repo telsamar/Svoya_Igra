@@ -1,10 +1,8 @@
 import pygame
 import random
 
-# Инициализация pygame
 pygame.init()
 
-# Определение размеров и цветов экрана
 screen_width = 1200
 screen_height = 800
 white = (255, 255, 255)
@@ -13,11 +11,8 @@ grey = (200, 200, 200)
 green =  (0, 255, 0)
 black = (0, 0, 0)
 
-# Создание окна
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Своя игра")
-
-# Загрузка шрифтов
 font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
 
@@ -47,7 +42,6 @@ def draw_player_circle(player, index, x, y, active, score):
     score_text_surface = font_small.render(score_text, True, white)
     score_text_rect = score_text_surface.get_rect(center=(x, y - 70))
     screen.blit(score_text_surface, score_text_rect)
-
 
 question_states = {}
 for category in questions:
@@ -84,7 +78,6 @@ def wrap_text(text, font_obj, max_width):
 
     lines.append(current_line)
     return lines
-
 
 def ask_question(category, question_index, active_player):
     q = questions[category][question_index]
@@ -124,7 +117,6 @@ def ask_question(category, question_index, active_player):
         background_image_q = pygame.image.load("fon.jpg")
         background_image_q = pygame.transform.scale(background_image_q, (1200, 800))
         screen.blit(background_image_q, (0, 0))
-        # screen.fill(black)
         for i, line in enumerate(wrapped_question):
             draw_text(line, 50, 50 + i * 36, font)
         draw_text("Ваш ответ: " + user_answer, 50, answer_y, font)
@@ -132,7 +124,7 @@ def ask_question(category, question_index, active_player):
 
 def get_num_players():
     running = True
-    num_players = 2  # Значение по умолчанию
+    num_players = 2
     center_x = screen_width // 2
     center_y = screen_height // 2
     selected_player = None
@@ -182,9 +174,6 @@ def get_num_players():
 
     return num_players
 
-
-
-
 def main():
     num_players = get_num_players()
     running = True
@@ -215,11 +204,8 @@ def main():
                     button_color = (255, 0, 0)  # Красный
                 draw_button(str((j + 1) * 100), start_x + i * (button_width + button_margin), 100 + j * (button_height + button_margin), button_width, button_height, button_color)
 
-        # draw_player_circle(1, screen_width // 2 - 100, screen_height - 100, active_player == 1, player_scores[0])
-        # draw_player_circle(2, screen_width // 2 + 100, screen_height - 100, active_player == 2, player_scores[1])
         for i in range(num_players):
             draw_player_circle(i + 1, i, screen_width // (num_players + 1) * (i + 1), screen_height - 100, active_player == i + 1, player_scores[i])
-
 
         pygame.display.flip()
 
@@ -229,35 +215,31 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
-                # Проверяем клик по кружкам с человечками
                 for i in range(num_players):
                     circle_x = screen_width // (num_players + 1) * (i + 1)
                     circle_y = screen_height - 100
                     if ((mouse_x - circle_x) ** 2 + (mouse_y - circle_y) ** 2) <= 50 ** 2:
                         active_player = i + 1
-                        # active_players = [not active_players[i] if j == i else False for j in range(num_players)]
                         active_players = []
                         for i in range(num_players):
                             active_players.append(False)
 
-                # Если выбран активный игрок, проверяем клик по квадратикам с вопросами
                 if active_player is not None:
                     for i, category in enumerate(questions.keys()):
                         for j in range(len(questions[category])):
                             button_x = start_x + i * (button_width + button_margin)
                             button_y = 100 + j * (button_height + button_margin)
                             if button_x <= mouse_x <= button_x + button_width and button_y <= mouse_y <= button_y + button_height:
-                                if question_states[category][j] is None:  # Только если вопрос еще не был отвечен
+                                if question_states[category][j] is None: 
                                     screen.fill(white)
                                     ask_question(category, j, active_player)
-                                    active_player = None  # Сбрасываем значение активного игрока
-                                    active_players = [False, False]  # Сбрасываем состояние активности игроков
+                                    active_player = None 
+                                    active_players = [False, False] 
                                     
-                                    # Обновляем состояние кнопки в зависимости от ответа
                                     if question_states[category][j]:
-                                        button_color = (0, 255, 0)  # Зеленый
+                                        button_color = (0, 255, 0)
                                     else:
-                                        button_color = (255, 0, 0)  # Красный
+                                        button_color = (255, 0, 0)
                                     draw_button(str(j + 1), button_x, button_y, button_width, button_height, button_color)
                             pygame.display.flip()
 
